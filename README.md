@@ -8,6 +8,8 @@ The headline: two fixes to how the **data** was set up mattered more than any mo
 and together with a small set of models they take accuracy from ~13–14 dB to **~19 dB PSNR on a
 held-out test set the models never saw**.
 
+📄 **Non-technical write-up with full results:** [`PROJECT_REPORT.md`](PROJECT_REPORT.md) (and `PROJECT_REPORT.pdf`).
+
 ![Best model vs ground truth](figures/best_vs_gt.png)
 *RGB input · real thermal · best model. Top rows = train, bottom rows = unseen test.*
 
