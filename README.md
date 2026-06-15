@@ -9,6 +9,7 @@ and together with a small set of models they take accuracy from ~13–14 dB to *
 held-out test set the models never saw**.
 
 📄 **Non-technical write-up with full results:** [`PROJECT_REPORT.md`](PROJECT_REPORT.md) (and `PROJECT_REPORT.pdf`).
+🗺️ **Active summer 2026 plan (WACV 2027 + CCAI):** [`PLAN.md`](PLAN.md).
 
 ![Best model vs ground truth](figures/best_vs_gt.png)
 *RGB input · real thermal · best model. Top rows = train, bottom rows = unseen test.*
