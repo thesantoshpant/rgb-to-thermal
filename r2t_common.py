@@ -4,8 +4,8 @@ import numpy as np
 from PIL import Image
 import torch, torch.nn as nn, torch.nn.functional as F
 
-BASE   = "/home/spant/UMich/umich-hackathon"
-CACHE  = f"{BASE}/rgb2thermal/data_cache"
+BASE   = os.environ.get("R2T_BASE", "/home/spant/UMich/umich-hackathon")
+CACHE  = os.environ.get("R2T_CACHE", f"{BASE}/rgb2thermal/data_cache")
 RES_H, RES_W = 512, 640
 
 def load_split():
