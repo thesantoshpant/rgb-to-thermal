@@ -121,6 +121,8 @@ The full Week 5 transfer matrix is now complete; see
 `WEEK5_TRANSFER_RESULT.md` and `results/week5_transfer_matrix_summary.csv`.
 The matrix is weak overall: affine wins 2/4 cells, only Ann Arbor -> Kust4K
 clears `+0.3 dB`, and both external-to-external transfer cells are negative.
+Follow-up runs in `WEEK5_FOLLOWUP_RESULT.md` show that Ann Arbor -> Kust4K
+survives a three-seed audit at `+0.474 +/- 0.061 dB`.
 
 ## Week 5 Follow-Up Runs
 
@@ -146,8 +148,20 @@ First-priority pretrain/fine-tune diagnostic:
 | external pretrain -> AA fine-tune | Ann Arbor | Ann Arbor | 15.845 | +0.165 vs from scratch |
 
 External pretraining gives a small seed-42 initialization gain after Ann Arbor
-fine-tuning, but it does not come close to the old `19.28 dB` local target and
-should not be framed as a successful WACV cross-dataset result yet.
+fine-tuning under the matched robust protocol. Do not compare the absolute
+`15.x dB` robust PSNR values directly to the old `19.28 dB` raw-target
+ensemble/TTA result; the target normalization and model protocol changed.
+
+Matched-compute follow-up:
+
+| Run | Source epochs | AA epochs | PSNR |
+|---|---:|---:|---:|
+| AA from scratch | 0 | 30 | 15.681 |
+| Kust4K+CART pretrain -> AA fine-tune | 20 | 30 | 15.845 |
+| AA from scratch matched compute | 0 | 50 | 15.920 |
+
+The pretrain/fine-tune gain does not survive matched compute; drop it as a
+positive claim unless later controls reverse this.
 
 Final transfer matrix result:
 
@@ -159,4 +173,5 @@ Final transfer matrix result:
 | CART -> Kust4K | 9.672 | 9.264 | -0.408 |
 
 Week 5 is complete, but it does not support a robust cross-dataset
-registration claim.
+registration claim. The one supported transfer result is Ann Arbor -> Kust4K;
+the broader cross-dataset and external-pretraining claims remain unsupported.

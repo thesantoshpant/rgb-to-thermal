@@ -129,7 +129,9 @@ Submit primarily to **WACV 2027 R2 (Aug 28, 2026), Algorithms track** only if We
 - [x] Re-run Ann Arbor diagonal control under robust normalization for seeds
   `{42, 7, 123}` with the locked `lambda_warp_rgb=0.5`.
 - [x] First priority experiment: pre-train on Kust4K+CART, fine-tune on Ann
-  Arbor, then compare against the 19.28 dB local target.
+  Arbor, then compare against the matched robust from-scratch control. The old
+  19.28 dB number is raw-target ensemble/TTA and is not a same-y-axis Week 5
+  target.
 - [x] Produce a transfer matrix table (rows = train, cols = test, cells = PSNR + SSIM).
 - **Preflight result:** Kust4K fails the registration-help threshold over three
   seeds (`+0.096 +/- 0.067 dB`). CART passes over three seeds
@@ -138,17 +140,23 @@ Submit primarily to **WACV 2027 R2 (Aug 28, 2026), Algorithms track** only if We
   `lambda_warp_rgb=2.0`. Use `robust` target normalization for transfer
   diagnostics. Do not frame Week 5 as proof of a general unsupervised
   registration bottleneck.
-- **Result:** Week 5 complete. The transfer matrix is weak: supervised affine
-  wins 2/4 cells, but only Ann Arbor -> Kust4K clears `+0.3 dB`
-  (`+0.404 dB`); Kust4K -> Ann Arbor is near-null (`+0.082 dB`), and
-  Kust4K -> CART (`-0.195 dB`) plus CART -> Kust4K (`-0.408 dB`) are negative.
-  Kust4K+CART pretraining followed by Ann Arbor fine-tuning gives seed-42 PSNR
-  `15.845 dB`, a `+0.165 dB` gain over matched from-scratch robust supervised
-  affine (`15.681 dB`) but still far below the old `19.28 dB` local target. See
-  `WEEK5_TRANSFER_RESULT.md` and `results/week5_transfer_matrix_summary.csv`.
+- **Result:** Week 5 complete after follow-up controls. The transfer matrix is
+  weak overall, but Ann Arbor -> Kust4K survives a three-seed audit:
+  `+0.474 +/- 0.061 dB`. Kust4K -> Ann Arbor is near-null (`+0.082 dB`,
+  seed 42), and Kust4K -> CART (`-0.195 dB`) plus CART -> Kust4K
+  (`-0.408 dB`) are negative single-seed cells. Kust4K+CART pretraining
+  followed by Ann Arbor fine-tuning gives seed-42 PSNR `15.845 dB`, but this
+  does not survive matched compute because Ann Arbor from scratch for 50 epochs
+  reaches `15.920 dB`. Do not compare these absolute PSNR values directly to
+  the old `19.28 dB` raw-target ensemble/TTA result because robust target
+  normalization changes the PSNR scale. See `WEEK5_TRANSFER_RESULT.md`,
+  `WEEK5_FOLLOWUP_RESULT.md`, `results/week5_transfer_matrix_summary.csv`,
+  `results/week5_aa_to_kust4k_3seed_summary.csv`, and
+  `results/week5_matched_compute_control_summary.csv`.
 - **Blocker:** No execution blocker remains for Week 5. The strategic blocker
-  is that Week 5 does not support a robust cross-dataset registration claim;
-  Week 6 should proceed with narrowed framing and stronger baselines.
+  is that Week 5 supports only the Ann Arbor -> Kust4K transfer cell, not a
+  broad cross-dataset registration or external-pretraining claim. Week 6 should
+  proceed with narrowed framing and stronger baselines.
 
 ### Week 6 — Baselines
 **Goal:** all required baselines reproduced fairly.
