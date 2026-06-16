@@ -60,15 +60,15 @@ Submit primarily to **WACV 2027 R2 (Aug 28, 2026), Algorithms track**. In parall
 
 ### Week 2 — **GO/NO-GO experiment**
 **Goal:** prove the bottleneck hypothesis on Kust4K + CART before we commit.
-- [ ] Train a small pix2pix baseline on Kust4K (aligned). Should match published numbers within reason.
-- [ ] Re-train the same model on the same data with **synthetic misalignment** at σ = {0.1, 0.2, 0.3, 0.5} applied at training time, measured against aligned test pairs.
-- [ ] Plot: **PSNR vs misalignment severity** (one line per dataset).
-- [ ] Also: do the same on CART.
-- [ ] **GO criterion:** PSNR drops by ≥ 2 dB at σ = 0.3 on at least one dataset.
-- [ ] **NO-GO branch:** if drop < 1 dB, pivot to workshop-only path (CCAI), re-scope to focus on the palette inversion + clean cross-dataset benchmark contribution.
-- [ ] Write a one-page memo with the go/no-go decision and commit it.
-- **Result:** Started Week 2 harness: added a small pix2pix go/no-go trainer with synthetic RGB-only misalignment support; Kust4K smoke test passed on Knox. Preliminary aligned vs sigma=0.3 runs finished on Kust4K and CART; neither shows a >=2 dB drop yet, so the full severity sweep is still required before the go/no-go memo.
-- **Blocker:** None yet.
+- [x] Train a small pix2pix baseline on Kust4K (aligned). Should match published numbers within reason.
+- [x] Re-train the same model on the same data with **synthetic misalignment** at σ = {0.1, 0.2, 0.3, 0.5} applied at training time, measured against aligned test pairs.
+- [x] Plot: **PSNR vs misalignment severity** (one line per dataset).
+- [x] Also: do the same on CART.
+- [x] Evaluate **GO criterion:** PSNR drops by ≥ 2 dB at σ = 0.3 on at least one dataset.
+- [x] Trigger **NO-GO branch:** drop < 1 dB, so pivot to workshop-only path (CCAI), re-scope to focus on the palette inversion + clean cross-dataset benchmark contribution.
+- [x] Write a one-page memo with the go/no-go decision and commit it.
+- **Result:** Full Week 2 sweep completed on Knox. At σ=0.3, final PSNR drops were only 0.347 dB on Kust4K and 0.185 dB on CART, so the WACV registration-bottleneck story is no-go under this protocol. See `WEEK2_GO_NO_GO_MEMO.md`, `results/week2_sweep_summary.csv`, and `figures/week2_psnr_vs_sigma.svg`.
+- **Blocker:** Need decision on whether to run two diagnostics before fully pivoting: validation-time RGB misalignment sensitivity and shuffled-RGB thermal-prior control.
 
 ### Week 3 — Learned registration module v0
 **Goal:** end-to-end trainable system that aligns *and* translates.

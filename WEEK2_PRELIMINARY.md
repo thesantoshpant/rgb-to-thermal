@@ -2,6 +2,8 @@
 
 Date: 2026-06-15
 
+Superseded by `WEEK2_GO_NO_GO_MEMO.md` after the full severity sweep.
+
 This is not the final Week 2 go/no-go memo. It records the first aligned vs
 synthetic-misalignment checkpoint after the Week 1 blockers were fixed.
 
@@ -37,4 +39,3 @@ This is only a two-point check. Before making the final decision, run the full
 severity sweep at `sigma = {0.1, 0.2, 0.3, 0.5}` on both datasets, plot PSNR vs
 severity, and inspect whether the current pix2pix baseline is relying on RGB
 structure or mostly learning dataset-level thermal priors.
-

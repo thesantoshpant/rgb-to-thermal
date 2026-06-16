@@ -1,0 +1,11 @@
+dataset,sigma,train_count,val_count,final_epoch,final_mae,final_rmse,final_psnr,best_epoch,best_psnr,metrics_path
+kust4k,0.0,1970,283,20,0.121715,0.157348,16.353854,20,16.353854,week2_runs/kust4k/sigma_0.00/metrics.csv
+kust4k,0.1,1970,283,20,0.126517,0.162196,16.076639,19,16.206141,week2_sweep_runs/kust4k/sigma_0.10/metrics.csv
+kust4k,0.2,1970,283,20,0.133000,0.169141,15.689290,3,15.868028,week2_sweep_runs/kust4k/sigma_0.20/metrics.csv
+kust4k,0.3,1970,283,20,0.128269,0.163898,16.007100,16,16.234930,week2_runs/kust4k/sigma_0.30/metrics.csv
+kust4k,0.5,1970,283,20,0.137891,0.174537,15.408402,16,15.936728,week2_sweep_runs/kust4k/sigma_0.50/metrics.csv
+caltech_cart,0.0,1822,222,20,0.133663,0.164097,16.455773,18,16.675840,week2_runs/caltech_cart/sigma_0.00/metrics.csv
+caltech_cart,0.1,1822,222,20,0.133179,0.164250,16.408878,18,16.513950,week2_sweep_runs/caltech_cart/sigma_0.10/metrics.csv
+caltech_cart,0.2,1822,222,20,0.143945,0.176375,15.761850,18,16.447058,week2_sweep_runs/caltech_cart/sigma_0.20/metrics.csv
+caltech_cart,0.3,1822,222,20,0.135608,0.166647,16.270332,18,16.476171,week2_runs/caltech_cart/sigma_0.30/metrics.csv
+caltech_cart,0.5,1822,222,20,0.141368,0.171604,15.989209,17,16.152578,week2_sweep_runs/caltech_cart/sigma_0.50/metrics.csv
