@@ -1,3 +1,5 @@
-run,dataset,train_sigma,eval_sigma,translation_frac,rotation_deg,scale_frac,epochs,res,train_count,val_count,best_val_mae,final_val_psnr,final_val_ssim,final_val_corr,final_theta_l2,final_uncertainty,knox_path
-week3_reg_v0_smoke,ann_arbor,0.3,0.3,0.20,20,0.25,1,128,8,4,0.283819,10.044720,0.379359,0.087952,0.005765,0.344590,week3_smoke/week3_reg_v0_smoke
-week3_reg_v0_ann_arbor_sigma03_amp_seed42,ann_arbor,0.3,0.3,0.20,20,0.25,30,256,336,41,0.104298,15.451983,0.543647,0.786548,0.013860,1.085265,week3_runs/week3_reg_v0_ann_arbor_sigma03_amp_seed42
+run,arch,dataset,train_sigma,eval_sigma,translation_frac,rotation_deg,scale_frac,epochs,res,train_count,val_count,best_val_mae,final_val_psnr,final_val_ssim,final_val_corr,final_theta_l2,final_uncertainty,knox_path
+week3_reg_v0_smoke,target_conditioned,ann_arbor,0.3,0.3,0.20,20,0.25,1,128,8,4,0.283819,10.044720,0.379359,0.087952,0.005765,0.344590,week3_smoke/week3_reg_v0_smoke
+week3_reg_shared_rgb_smoke,shared_rgb,ann_arbor,0.3,0.3,0.20,20,0.25,1,128,8,4,0.290599,9.817378,0.373919,0.019112,0.013494,0.624401,week3_smoke/week3_reg_shared_rgb_smoke
+week3_reg_v0_ann_arbor_sigma03_amp_seed42,target_conditioned,ann_arbor,0.3,0.3,0.20,20,0.25,30,256,336,41,0.104298,15.451983,0.543647,0.786548,0.013860,1.085265,week3_runs/week3_reg_v0_ann_arbor_sigma03_amp_seed42
+week3_reg_shared_rgb_ann_arbor_sigma03_amp_seed42,shared_rgb,ann_arbor,0.3,0.3,0.20,20,0.25,30,256,336,41,0.102832,15.813971,0.549339,0.804655,0.036047,0.921804,week3_runs/week3_reg_shared_rgb_ann_arbor_sigma03_amp_seed42

@@ -17,6 +17,7 @@ import time
 from pathlib import Path
 
 import numpy as np
+import timm
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -25,7 +26,7 @@ from torchvision.transforms import InterpolationMode
 import torchvision.transforms.functional as TF
 
 import r2t_common as C
-from train_a1 import UNetReg
+from train_a1 import ConvBlock, UNetReg
 
 
 DEFAULT_TRANSLATION_FRAC = 0.20
@@ -193,6 +194,60 @@ class RegistrationTranslator(nn.Module):
         }
 
 
+class SharedFeatureRegistrationTranslator(nn.Module):
+    """Deployable RGB-only variant: one encoder feeds registration and decoding."""
+
+    def __init__(self, encoder: str):
+        super().__init__()
+        self.enc = timm.create_model(encoder, pretrained=True, features_only=True, in_chans=3)
+        chs = self.enc.feature_info.channels()
+        self.theta = nn.Sequential(
+            nn.AdaptiveAvgPool2d(1),
+            nn.Flatten(),
+            nn.Linear(chs[-1], 256),
+            nn.GELU(),
+            nn.Linear(256, 6),
+        )
+        nn.init.zeros_(self.theta[-1].weight)
+        with torch.no_grad():
+            self.theta[-1].bias.copy_(torch.tensor([1.0, 0.0, 0.0, 0.0, 1.0, 0.0]))
+        self.unc = nn.Sequential(
+            nn.Conv2d(chs[0], 64, 3, padding=1),
+            nn.GELU(),
+            nn.Conv2d(64, 1, 1),
+        )
+        self.up3 = ConvBlock(chs[3] + chs[2], chs[2])
+        self.up2 = ConvBlock(chs[2] + chs[1], chs[1])
+        self.up1 = ConvBlock(chs[1] + chs[0], chs[0])
+        self.u0 = ConvBlock(chs[0], 64)
+        self.u_1 = ConvBlock(64, 32)
+        self.head = nn.Conv2d(32, 1, 1)
+
+    def _up(self, x: torch.Tensor, ref: torch.Tensor) -> torch.Tensor:
+        return F.interpolate(x, size=ref.shape[2:], mode="bilinear", align_corners=False)
+
+    def _up2(self, x: torch.Tensor) -> torch.Tensor:
+        return F.interpolate(x, scale_factor=2, mode="bilinear", align_corners=False)
+
+    def forward(self, rgb_raw: torch.Tensor, target_for_reg: torch.Tensor) -> dict[str, torch.Tensor]:
+        f1, f2, f3, f4 = self.enc(normalize_rgb(rgb_raw))
+        theta = self.theta(f4).view(-1, 2, 3)
+        wf1, wf2, wf3, wf4 = [apply_affine(feat, theta) for feat in (f1, f2, f3, f4)]
+        d3 = self.up3(torch.cat([self._up(wf4, wf3), wf3], 1))
+        d2 = self.up2(torch.cat([self._up(d3, wf2), wf2], 1))
+        d1 = self.up1(torch.cat([self._up(d2, wf1), wf1], 1))
+        u0 = self.u0(self._up2(d1))
+        u1 = self.u_1(self._up2(u0))
+        pred = torch.sigmoid(self.head(u1))
+        uncertainty = F.softplus(F.interpolate(self.unc(wf1), size=target_for_reg.shape[-2:], mode="bilinear", align_corners=False))
+        return {
+            "pred": pred,
+            "theta": theta,
+            "uncertainty": uncertainty,
+            "warped_raw": apply_affine(rgb_raw, theta),
+        }
+
+
 def apply_affine(x: torch.Tensor, theta: torch.Tensor) -> torch.Tensor:
     grid = F.affine_grid(theta, x.shape, align_corners=False)
     return F.grid_sample(x, grid, mode="bilinear", padding_mode="border", align_corners=False)
@@ -293,6 +348,7 @@ def write_json(path: Path, payload: dict) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--name", default="week3_reg_v0_ann_arbor")
+    parser.add_argument("--arch", default="target_conditioned", choices=["target_conditioned", "shared_rgb"])
     parser.add_argument("--encoder", default="convnext_tiny")
     parser.add_argument("--res", type=int, default=256)
     parser.add_argument("--epochs", type=int, default=30)
@@ -340,7 +396,10 @@ def main() -> None:
     train_loader = DataLoader(train_ds, batch_size=args.bs, shuffle=True, num_workers=4, drop_last=True, pin_memory=True)
     val_loader = DataLoader(val_ds, batch_size=args.bs, shuffle=False, num_workers=2, pin_memory=True)
 
-    model = RegistrationTranslator(args.encoder).to(device)
+    if args.arch == "shared_rgb":
+        model = SharedFeatureRegistrationTranslator(args.encoder).to(device)
+    else:
+        model = RegistrationTranslator(args.encoder).to(device)
     opt = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=1e-4)
     sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=args.epochs)
 

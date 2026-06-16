@@ -87,10 +87,10 @@ Submit primarily to **WACV 2027 R2 (Aug 28, 2026), Algorithms track**. In parall
 - [x] Architecture sketch: a small registration head that consumes RGB and thermal features and predicts (a) a parametric warp (start with affine), (b) a per-pixel "alignment uncertainty" map.
 - [x] Loss: (1) photometric warp loss (warped RGB-derived edges ↔ thermal edges), (2) smoothness on the warp, (3) translation reconstruction weighted by `1 / (1 + uncertainty)`.
 - [x] Plug v0 into the existing ConvNeXt+U-Net translator.
-- [ ] Share encoder features instead of using a separate registration head.
+- [x] Share encoder features instead of using a separate registration head.
 - [x] First training pass on Ann Arbor only; sanity-check on val.
-- **Result:** Week 3 v0 landed in `week3_registration_v0.py`. First Ann Arbor amplified σ=0.3 run trained stably for 30 epochs and reached val MAE 0.1043 / PSNR 15.45 / SSIM 0.544. See `WEEK3_REGISTRATION_V0_RESULT.md` and `results/week3_registration_v0_summary.csv`.
-- **Blocker:** Open before Week 5: audit/improve Kust4K and CART target normalization. Also note v0 is target-conditioned for registration sanity-checking; final architecture still needs shared features or a deployable test-time registration path.
+- **Result:** Week 3 complete. `week3_registration_v0.py` now has both target-conditioned and shared-RGB-feature affine registration variants. On Ann Arbor amplified σ=0.3, target-conditioned v0 reached val MAE 0.1043 / PSNR 15.45 / SSIM 0.544; shared RGB feature v0 reached MAE 0.1028 / PSNR 15.81 / SSIM 0.549. See `WEEK3_REGISTRATION_V0_RESULT.md` and `results/week3_registration_v0_summary.csv`.
+- **Blocker:** Open before Week 5: audit/improve Kust4K and CART target normalization. Week 4 must also test whether affine is enough or needs TPS/dense flow.
 
 ### Week 4 — Registration module v1 + multi-dataset training
 **Goal:** the model trains and improves over the fixed-crop baseline on at least one dataset.
