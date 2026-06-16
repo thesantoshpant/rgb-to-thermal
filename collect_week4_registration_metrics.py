@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Collect final Week 4 registration metrics from run directories."""
+"""Collect final registration metrics from run directories."""
 from __future__ import annotations
 
 import argparse
@@ -17,10 +17,11 @@ def read_run(root: Path, run: str, baseline_psnr: dict[tuple[str, int], float]) 
     dataset = metadata.get("dataset", "ann_arbor")
     seed = int(metadata["seed"])
     psnr = float(final["val_psnr"])
+    arch = metadata["arch"]
     baseline = baseline_psnr.get((dataset, seed))
     return {
         "run": run,
-        "arch": metadata["arch"],
+        "arch": arch,
         "dataset": dataset,
         "seed": seed,
         "train_sigma": float(metadata["train_sigma"]),
@@ -42,7 +43,7 @@ def read_run(root: Path, run: str, baseline_psnr: dict[tuple[str, int], float]) 
         "final_flow_tv": float(final.get("val_flow_tv", 0.0)),
         "final_warp_rgb_mae": float(final.get("val_warp_rgb_mae", 0.0)),
         "final_uncertainty": float(final.get("val_uncertainty", 0.0)),
-        "delta_vs_no_registration": "" if baseline is None else psnr - baseline,
+        "delta_vs_no_registration": "" if arch == "no_registration" or baseline is None else psnr - baseline,
         "knox_path": str(run_dir),
     }
 

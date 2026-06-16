@@ -46,3 +46,6 @@ Week 1 source-of-truth notes for public RGB/Thermal data.
 - Raw extracted count: 4024 paired RGB/TIR samples.
 - Usable loader count after excluding `broke_RGB.txt` and `broke_TIR.txt` stems:
   2818 total; train 1970, val 283, test 565.
+- Direct numerical comparisons to published Kust4K training results must state
+  this exclusion policy, because the official split files list more samples
+  before removing author-flagged broken RGB/TIR stems.

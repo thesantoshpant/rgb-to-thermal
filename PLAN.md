@@ -3,7 +3,7 @@
 **Locked:** 2026-06-something. Open this file at the start of every work session.
 
 ## The paper, in one sentence
-> **Alignment uncertainty, not backbone scale, is the dominant bottleneck in aerial RGB→thermal image translation.** We propose a learned, uncertainty-aware cross-modal registration module that jointly trains with the translation network and generalizes across three aerial RGB-thermal datasets.
+> **Synthetic warp augmentation plus direct warp-recovery supervision can make aerial RGB-to-thermal translation more robust under weak alignment, but cross-dataset gains depend strongly on target representation.**
 
 ## Targets and hard dates
 | Milestone | Date | Why |
@@ -17,7 +17,7 @@
 | WACV 2027 conference | **Jan 5–9, 2027** (Disney Springs) | |
 
 ## Strategy in one paragraph
-Submit primarily to **WACV 2027 R2 (Aug 28, 2026), Algorithms track**. In parallel, submit a shorter version to **CCAI @ NeurIPS Dec 2026** (non-archival, does not block future publication) so we always have a workshop paper as a floor. If WACV rejects, the workshop paper still lands and we re-aim for WACV 2028 R1 with revisions.
+Submit primarily to **WACV 2027 R2 (Aug 28, 2026), Algorithms track** only if Week 5 turns the Week 4 synthetic-supervised signal into a robust cross-dataset story. The current mechanism is not unsupervised registration discovering a bottleneck; it is synthetic warp pretraining / auxiliary supervision. In parallel, submit a shorter version to **CCAI @ NeurIPS Dec 2026** (non-archival, does not block future publication) so we always have a workshop paper around alignment diagnostics, target normalization, and aerial urban heat as a floor.
 
 ## Team and split
 - **Santosh:** core engineering (data loaders, registration module, training infrastructure, evaluation harness).
@@ -93,7 +93,7 @@ Submit primarily to **WACV 2027 R2 (Aug 28, 2026), Algorithms track**. In parall
 - **Blocker:** Week 4 must improve over the no-registration baseline before we can claim learned registration recovers misalignment damage. Open before Week 5: improve Kust4K/CART target normalization.
 
 ### Week 4 — Registration module v1 + multi-dataset training
-**Goal:** the model trains and improves over the fixed-crop baseline on at least one dataset.
+**Goal:** the model trains and improves over the matched no-registration baseline on at least one dataset.
 - [x] Run same-protocol no-registration Ann Arbor baseline for the headline delta.
 - [x] Start Kust4K/CART target-normalization audit.
 - [x] Implement a target-normalization fix or choose the conservative reporting fallback.
@@ -102,23 +102,39 @@ Submit primarily to **WACV 2027 R2 (Aug 28, 2026), Algorithms track**. In parall
 - [x] Test a small input-space dense-flow candidate.
 - [x] Add known synthetic-warp supervision or an oracle inverse-warp diagnostic before more TPS/flow scaling.
 - [x] Repeat supervised input-space affine with more seeds and decide whether to use it as pretraining/auxiliary loss.
-- [x] Train on Kust4K. Compare against our fixed-crop baseline.
+- [x] Train on Kust4K. Compare against the matched no-registration baseline.
 - [x] Train on CART. Same comparison.
-- [x] **Decision point:** if learned registration beats fixed-crop by ≥ 0.3 dB on at least two datasets → continue. Else: revisit architecture or downgrade scope.
-- **Result:** Complete. Unsupervised shared-feature affine, input-space affine, and dense flow all underperformed no-registration on Ann Arbor. Adding synthetic RGB warp supervision to input-space affine gives a 3-seed Ann Arbor gain of +0.309 +/- 0.130 dB over no-registration. External same-dataset runs are mixed but positive: Kust4K +0.147 dB, CART +1.196 dB. Week 4 passes the continuation criterion on Ann Arbor + CART. Primary Week 5 mechanism: input-space affine with synthetic RGB warp supervision as pretraining/auxiliary loss. See `WEEK4_REGISTRATION_V1_PROGRESS.md` and `results/week4_registration_v1_summary.csv`.
-- **Blocker:** No Week 4 blocker. Week 5 must not make cross-dataset magnitude claims until Kust4K/CART target normalization is fixed or the conservative within-dataset reporting fallback is kept explicit.
+- [x] **Decision point:** if learned registration beats matched no-registration by ≥ 0.3 dB on at least two datasets → continue. Else: revisit architecture or downgrade scope.
+- **Result:** Complete, but marginal. Unsupervised shared-feature affine, input-space affine, and dense flow all underperformed no-registration on Ann Arbor. Adding synthetic RGB warp supervision to input-space affine gives a 3-seed Ann Arbor gain of +0.309 +/- 0.130 dB over no-registration. External same-dataset runs are mixed: Kust4K +0.147 dB is below threshold, while CART +1.196 dB is strong but single-seed and may be loss-balance-driven. Week 5 may continue only as a conditional follow-up around synthetic warp supervision, not as a clean unsupervised-registration story. See `WEEK4_REGISTRATION_V1_PROGRESS.md` and `results/week4_registration_v1_summary.csv`.
+- **Blocker:** Week 5 must confirm Kust4K/CART over 3 seeds, run CART `lambda_warp_rgb` sensitivity, and lock target normalization before any cross-dataset transfer claim.
 
 ### Week 5 — Cross-dataset generalization
-**Goal:** show the method transfers across datasets.
+**Goal:** show whether the method transfers across datasets after target normalization.
+- [x] Preconditions before transfer:
+  - [x] Kust4K 3-seed no-registration vs supervised-affine confirmation.
+  - [x] CART 3-seed no-registration vs supervised-affine confirmation.
+  - [x] CART `lambda_warp_rgb` sensitivity sweep over `{0.1, 0.5, 1.0, 2.0}`.
+  - [x] Target-normalization fix or explicit fallback locked before cross-dataset claims.
 - [ ] Run the four transfer combinations:
   - Train Ann Arbor → test Kust4K
   - Train Kust4K → test Ann Arbor
   - Train Kust4K → test CART
   - Train CART → test Kust4K
+- [x] Add `--eval-dataset` transfer support to `week3_registration_v0.py` and
+  smoke-test Kust4K→CART with `target_normalization=robust`.
 - [ ] Produce a transfer matrix table (rows = train, cols = test, cells = PSNR + SSIM).
 - [ ] Pre-train on Kust4K + CART, fine-tune on Ann Arbor — does it beat our 19.28?
+- **Preflight result:** Kust4K fails the registration-help threshold over three
+  seeds (`+0.096 +/- 0.067 dB`). CART passes over three seeds
+  (`+0.782 +/- 0.368 dB`) but is loss-balance-sensitive: the CART seed-42 delta
+  falls to `+0.222 dB` at `lambda_warp_rgb=0.1` and rises to `+1.257 dB` at
+  `lambda_warp_rgb=2.0`. Use `robust` target normalization for transfer
+  diagnostics. Do not frame Week 5 as proof of a general unsupervised
+  registration bottleneck.
 - **Result:**
-- **Blocker:**
+- **Blocker:** Cross-dataset transfer still needs the actual full matrix;
+  preflight and the transfer smoke test only cleared the conditions for running
+  it.
 
 ### Week 6 — Baselines
 **Goal:** all required baselines reproduced fairly.

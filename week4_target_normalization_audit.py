@@ -81,6 +81,8 @@ def main() -> None:
     parser.add_argument("--split", default="val", choices=["train", "val", "test", "all"])
     parser.add_argument("--height", type=int, default=256)
     parser.add_argument("--width", type=int, default=320)
+    parser.add_argument("--target-normalization", default="raw", choices=["raw", "robust", "histmatch"])
+    parser.add_argument("--target-normalization-stats")
     parser.add_argument("--max-items", type=int, default=300)
     parser.add_argument("--out", default="results/week4_target_normalization_audit.csv")
     args = parser.parse_args()
@@ -94,6 +96,8 @@ def main() -> None:
                     ann_arbor_cache=args.ann_arbor_cache,
                     split=args.split,
                     size_hw=(args.height, args.width),
+                    target_norm=args.target_normalization,
+                    target_norm_stats=args.target_normalization_stats,
                 ),
                 args.max_items,
             )
@@ -106,6 +110,8 @@ def main() -> None:
                     kust4k_root=args.kust4k_root,
                     split=args.split,
                     size_hw=(args.height, args.width),
+                    target_norm=args.target_normalization,
+                    target_norm_stats=args.target_normalization_stats,
                 ),
                 args.max_items,
             )
@@ -118,6 +124,8 @@ def main() -> None:
                     caltech_root=args.caltech_root,
                     split=args.split,
                     size_hw=(args.height, args.width),
+                    target_norm=args.target_normalization,
+                    target_norm_stats=args.target_normalization_stats,
                 ),
                 args.max_items,
             )

@@ -212,11 +212,29 @@ def metrics_np(pred: np.ndarray, target: np.ndarray) -> dict[str, float]:
 
 def make_dataset(args: argparse.Namespace, split: str, train: bool) -> Dataset:
     if args.dataset == "kust4k":
-        ds = UnifiedR2TDataset.from_roots(kust4k_root=args.kust4k_root, split=split, size_hw=(args.height, args.width))
+        ds = UnifiedR2TDataset.from_roots(
+            kust4k_root=args.kust4k_root,
+            split=split,
+            size_hw=(args.height, args.width),
+            target_norm=args.target_normalization,
+            target_norm_stats=args.target_normalization_stats,
+        )
     elif args.dataset == "caltech_cart":
-        ds = UnifiedR2TDataset.from_roots(caltech_root=args.caltech_root, split=split, size_hw=(args.height, args.width))
+        ds = UnifiedR2TDataset.from_roots(
+            caltech_root=args.caltech_root,
+            split=split,
+            size_hw=(args.height, args.width),
+            target_norm=args.target_normalization,
+            target_norm_stats=args.target_normalization_stats,
+        )
     elif args.dataset == "ann_arbor":
-        ds = UnifiedR2TDataset.from_roots(ann_arbor_cache=args.ann_arbor_cache, split=split, size_hw=(args.height, args.width))
+        ds = UnifiedR2TDataset.from_roots(
+            ann_arbor_cache=args.ann_arbor_cache,
+            split=split,
+            size_hw=(args.height, args.width),
+            target_norm=args.target_normalization,
+            target_norm_stats=args.target_normalization_stats,
+        )
     else:
         raise ValueError(args.dataset)
     limit = args.max_train if train else args.max_eval
@@ -445,6 +463,8 @@ def parse_args() -> argparse.Namespace:
     ap.add_argument("--eval-split", default="val", choices=["val", "test"])
     ap.add_argument("--height", type=int, default=256)
     ap.add_argument("--width", type=int, default=320)
+    ap.add_argument("--target-normalization", default="raw", choices=["raw", "robust", "histmatch"])
+    ap.add_argument("--target-normalization-stats")
     ap.add_argument("--epochs", type=int, default=20)
     ap.add_argument("--batch-size", type=int, default=8)
     ap.add_argument("--workers", type=int, default=2)

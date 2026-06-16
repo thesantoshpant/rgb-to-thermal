@@ -38,6 +38,12 @@ The important design result is negative for unsupervised affine/flow and
 positive for synthetic RGB warp supervision. Blindly adding warp capacity did
 not help; adding direct known-warp supervision did.
 
+This changes the method claim. `lambda_warp_rgb` directly supervises
+`warped_raw` against the aligned RGB image that existed before synthetic
+misalignment was applied. The honest mechanism is synthetic warp augmentation
+plus warp-recovery supervision, not unsupervised registration discovering a
+latent cross-modal alignment.
+
 ## Three-Seed Ann Arbor Check
 
 | Seed | No-reg PSNR | Supervised affine PSNR | Delta |
@@ -47,9 +53,9 @@ not help; adding direct known-warp supervision did.
 | 123 | 15.765 | 16.202 | +0.437 |
 | Mean +/- std | 15.941 | 16.250 | +0.309 +/- 0.130 |
 
-This meets the Week 4 Ann Arbor bar, but the gain is still moderate and should
-be treated as a synthetic-supervised signal, not a final real-world registration
-claim.
+This is a marginal positive Ann Arbor signal, not a clean statistical pass. The
+mean is just above the `0.3 dB` threshold and the seed variance is large enough
+that Week 5 must treat it as provisional.
 
 ## External Same-Dataset Comparisons
 
@@ -76,11 +82,14 @@ the conservative choice is:
 
 ## Decision
 
-Week 4 is complete and passes the continuation criterion with caveats:
+Week 4 is complete, but the continuation criterion is only conditionally met:
 
-- learned registration beats fixed-crop/no-registration by at least `0.3 dB` on
-  two datasets: Ann Arbor mean `+0.309 dB`, CART `+1.196 dB`;
+- supervised affine beats the matched no-registration baseline by at least
+  `0.3 dB` on Ann Arbor mean and CART single seed: Ann Arbor `+0.309 dB`, CART
+  `+1.196 dB`;
 - Kust4K is positive but below the `0.3 dB` threshold at `+0.147 dB`;
+- the Ann Arbor gain is borderline and CART still needs seed and loss-weight
+  sensitivity checks;
 - the primary Week 5 mechanism should be input-space affine with synthetic RGB
   warp supervision, likely as pretraining or an auxiliary loss;
 - target-conditioned registration remains an internal oracle only because it
@@ -88,3 +97,18 @@ Week 4 is complete and passes the continuation criterion with caveats:
 
 See `results/week4_registration_v1_summary.csv` for the full machine-readable
 run table.
+
+## Week 5 Follow-Up
+
+The requested preflight checks landed in `WEEK5_PREFLIGHT.md` and
+`results/week5_preflight_registration_summary.csv`:
+
+- Kust4K three-seed delta is `+0.096 +/- 0.067 dB`, below threshold.
+- CART three-seed delta is `+0.782 +/- 0.368 dB`, positive but variable.
+- CART lambda sensitivity confirms loss-balance dependence:
+  `lambda_warp_rgb=0.1` gives only `+0.222 dB`, while `2.0` gives
+  `+1.257 dB`.
+
+These checks reinforce the narrower framing: supervised synthetic warp recovery
+is useful in some settings, but Week 4/5 do not prove a general unsupervised
+registration bottleneck.

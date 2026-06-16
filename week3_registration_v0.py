@@ -170,15 +170,33 @@ class MisalignedUnifiedDataset(Dataset):
         }
 
 
-def make_external_base_dataset(args: argparse.Namespace, split: str, limit: int) -> Dataset:
-    if args.dataset == "kust4k":
-        ds = UnifiedR2TDataset.from_roots(kust4k_root=args.kust4k_root, split=split, size_hw=(C.RES_H, C.RES_W))
-    elif args.dataset == "caltech_cart":
-        ds = UnifiedR2TDataset.from_roots(caltech_root=args.caltech_root, split=split, size_hw=(C.RES_H, C.RES_W))
+def make_external_base_dataset(
+    args: argparse.Namespace,
+    split: str,
+    limit: int,
+    dataset: str | None = None,
+) -> Dataset:
+    dataset = dataset or args.dataset
+    if dataset == "kust4k":
+        ds = UnifiedR2TDataset.from_roots(
+            kust4k_root=args.kust4k_root,
+            split=split,
+            size_hw=(C.RES_H, C.RES_W),
+            target_norm=args.target_normalization,
+            target_norm_stats=args.target_normalization_stats,
+        )
+    elif dataset == "caltech_cart":
+        ds = UnifiedR2TDataset.from_roots(
+            caltech_root=args.caltech_root,
+            split=split,
+            size_hw=(C.RES_H, C.RES_W),
+            target_norm=args.target_normalization,
+            target_norm_stats=args.target_normalization_stats,
+        )
     else:
-        raise ValueError(args.dataset)
+        raise ValueError(dataset)
     if len(ds) == 0:
-        raise RuntimeError(f"No records found for dataset={args.dataset} split={split}")
+        raise RuntimeError(f"No records found for dataset={dataset} split={split}")
     if limit and limit > 0:
         return Subset(ds, list(range(min(limit, len(ds)))))
     return ds
@@ -191,8 +209,10 @@ def make_registration_dataset(
     augment: bool,
     seed: int,
     limit: int,
+    dataset: str | None = None,
 ) -> Dataset:
-    if args.dataset == "ann_arbor":
+    dataset = dataset or args.dataset
+    if dataset == "ann_arbor":
         split = C.load_split()
         names = split[split_name][: limit or None]
         return MisalignedAnnArbor(
@@ -204,7 +224,7 @@ def make_registration_dataset(
             max_rotation_deg=args.max_rotation_deg,
             max_scale_frac=args.max_scale_frac,
         )
-    base = make_external_base_dataset(args, split_name, limit)
+    base = make_external_base_dataset(args, split_name, limit, dataset=dataset)
     return MisalignedUnifiedDataset(
         base,
         sigma=sigma,
@@ -643,10 +663,13 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--name", default="week3_reg_v0_ann_arbor")
     parser.add_argument("--dataset", default="ann_arbor", choices=["ann_arbor", "kust4k", "caltech_cart"])
+    parser.add_argument("--eval-dataset", default=None, choices=["ann_arbor", "kust4k", "caltech_cart"])
     parser.add_argument("--ann-arbor-cache", default=None, help="Kept for metadata compatibility; R2T_CACHE controls Ann Arbor loading.")
     parser.add_argument("--kust4k-root", default=None)
     parser.add_argument("--caltech-root", default=None)
     parser.add_argument("--eval-split", default="val", choices=["val", "test"])
+    parser.add_argument("--target-normalization", default="raw", choices=["raw", "robust", "histmatch"])
+    parser.add_argument("--target-normalization-stats")
     parser.add_argument(
         "--arch",
         default="target_conditioned",
@@ -676,6 +699,7 @@ def main() -> None:
     parser.add_argument("--max-val", type=int, default=0)
     parser.add_argument("--out-dir", default=None)
     args = parser.parse_args()
+    args.eval_dataset = args.eval_dataset or args.dataset
 
     seed_all(args.seed)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -686,6 +710,7 @@ def main() -> None:
         augment=True,
         seed=args.seed,
         limit=args.max_train,
+        dataset=args.dataset,
     )
     val_ds = make_registration_dataset(
         args,
@@ -694,6 +719,7 @@ def main() -> None:
         augment=False,
         seed=args.seed + 100000,
         limit=args.max_val,
+        dataset=args.eval_dataset,
     )
     train_loader = DataLoader(train_ds, batch_size=args.bs, shuffle=True, num_workers=4, drop_last=True, pin_memory=True)
     val_loader = DataLoader(val_ds, batch_size=args.bs, shuffle=False, num_workers=2, pin_memory=True)

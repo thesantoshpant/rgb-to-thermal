@@ -25,6 +25,7 @@ from PIL import Image
 
 DEFAULT_SIZE = (512, 640)  # height, width
 IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".tif", ".tiff", ".bmp"}
+TARGET_NORMALIZATIONS = {"raw", "robust", "histmatch"}
 
 
 @dataclass(frozen=True)
@@ -263,14 +264,64 @@ def _load_scalar(path: Path, size_hw: tuple[int, int]) -> torch.Tensor:
     return torch.from_numpy(out[None])
 
 
+def _load_target_norm_stats(path: str | os.PathLike[str] | None) -> dict | None:
+    if not path:
+        return None
+    return json.loads(Path(path).read_text(encoding="utf-8"))
+
+
+def _robust_rescale(x: torch.Tensor, lo_q: float = 0.01, hi_q: float = 0.99) -> torch.Tensor:
+    arr = x[0].numpy().astype(np.float32)
+    lo = float(np.quantile(arr, lo_q))
+    hi = float(np.quantile(arr, hi_q))
+    if hi <= lo + 1e-8:
+        return torch.zeros_like(x)
+    out = np.clip((arr - lo) / (hi - lo), 0.0, 1.0).astype(np.float32)
+    return torch.from_numpy(out[None])
+
+
+def _histmatch_to_reference(x: torch.Tensor, dataset_tag: str, stats: dict | None) -> torch.Tensor:
+    if not stats:
+        raise ValueError("target_norm='histmatch' requires target_norm_stats")
+    datasets = stats.get("datasets", {})
+    reference = stats.get("reference", "ann_arbor")
+    if dataset_tag not in datasets or reference not in datasets:
+        return x
+    src_q = np.asarray(datasets[dataset_tag]["quantiles"], dtype=np.float32)
+    ref_q = np.asarray(datasets[reference]["quantiles"], dtype=np.float32)
+    src_q, unique_idx = np.unique(src_q, return_index=True)
+    ref_q = ref_q[unique_idx]
+    if len(src_q) < 2:
+        return x
+    arr = x[0].numpy().astype(np.float32)
+    matched = np.interp(np.clip(arr, 0.0, 1.0), src_q, ref_q).astype(np.float32)
+    return torch.from_numpy(np.clip(matched, 0.0, 1.0)[None])
+
+
+def _normalize_target(x: torch.Tensor, dataset_tag: str, target_norm: str, stats: dict | None) -> torch.Tensor:
+    if target_norm == "raw":
+        return x
+    if target_norm == "robust":
+        return _robust_rescale(x)
+    if target_norm == "histmatch":
+        return _histmatch_to_reference(x, dataset_tag, stats)
+    raise ValueError(f"Unknown target normalization: {target_norm}")
+
+
 class UnifiedR2TDataset(torch.utils.data.Dataset):
     def __init__(
         self,
         records: list[PairRecord],
         size_hw: tuple[int, int] = DEFAULT_SIZE,
+        target_norm: str = "raw",
+        target_norm_stats: str | os.PathLike[str] | None = None,
     ):
+        if target_norm not in TARGET_NORMALIZATIONS:
+            raise ValueError(f"target_norm must be one of {sorted(TARGET_NORMALIZATIONS)}")
         self.records = records
         self.size_hw = size_hw
+        self.target_norm = target_norm
+        self.target_norm_stats = _load_target_norm_stats(target_norm_stats)
 
     @classmethod
     def from_roots(
@@ -282,6 +333,8 @@ class UnifiedR2TDataset(torch.utils.data.Dataset):
         kust4k_manifest: str | os.PathLike[str] | None = None,
         split: str = "train",
         size_hw: tuple[int, int] = DEFAULT_SIZE,
+        target_norm: str = "raw",
+        target_norm_stats: str | os.PathLike[str] | None = None,
     ) -> "UnifiedR2TDataset":
         records: list[PairRecord] = []
         if ann_arbor_cache:
@@ -290,7 +343,7 @@ class UnifiedR2TDataset(torch.utils.data.Dataset):
             records.extend(discover_caltech(Path(caltech_root), split, Path(caltech_manifest) if caltech_manifest else None))
         if kust4k_root:
             records.extend(discover_kust4k(Path(kust4k_root), split, Path(kust4k_manifest) if kust4k_manifest else None))
-        return cls(records, size_hw=size_hw)
+        return cls(records, size_hw=size_hw, target_norm=target_norm, target_norm_stats=target_norm_stats)
 
     def __len__(self) -> int:
         return len(self.records)
@@ -306,6 +359,7 @@ class UnifiedR2TDataset(torch.utils.data.Dataset):
             scalar = thermal.clone()
         else:
             raise FileNotFoundError(f"No thermal/scalar target for {rec.rgb_path}")
+        scalar = _normalize_target(scalar, rec.dataset_tag, self.target_norm, self.target_norm_stats)
         quality = torch.tensor(float(rec.alignment_quality), dtype=torch.float32)
         return rgb, thermal, scalar, rec.dataset_tag, quality
 
@@ -326,6 +380,8 @@ def main() -> None:
     ap.add_argument("--split", default="train", choices=["train", "val", "test", "all"])
     ap.add_argument("--height", type=int, default=DEFAULT_SIZE[0])
     ap.add_argument("--width", type=int, default=DEFAULT_SIZE[1])
+    ap.add_argument("--target-normalization", default="raw", choices=sorted(TARGET_NORMALIZATIONS))
+    ap.add_argument("--target-normalization-stats")
     ap.add_argument("--check-first", action="store_true")
     args = ap.parse_args()
 
@@ -337,6 +393,8 @@ def main() -> None:
         kust4k_manifest=args.kust4k_manifest,
         split=args.split,
         size_hw=(args.height, args.width),
+        target_norm=args.target_normalization,
+        target_norm_stats=args.target_normalization_stats,
     )
     print(json.dumps({"total": len(ds), "by_dataset": ds.summary()}, indent=2))
     if args.check_first and len(ds):
