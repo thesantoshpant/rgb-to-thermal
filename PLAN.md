@@ -160,16 +160,30 @@ Submit primarily to **WACV 2027 R2 (Aug 28, 2026), Algorithms track** only if We
 
 ### Week 6 — Baselines
 **Goal:** all required baselines reproduced fairly.
-- [ ] Implement + train:
-  - **pix2pix** (vanilla),
-  - **CycleGAN** *or* **CUT** (pick one for unpaired/weakly-aligned comparison),
-  - **ConvNeXt+U-Net regression** (we have it),
-  - **A pretrained translation backbone** (Restormer or SwinIR) fine-tuned,
-  - **Our current ensemble + TTA** (we have it).
-- [ ] Match training compute across all baselines for fairness.
-- [ ] Lock the baseline table; this is the "results" comparison table in the paper.
-- **Result:**
-- **Blocker:**
+- [x] Implement + train:
+  - [x] **pix2pix** (vanilla),
+  - [x] **CycleGAN** for unpaired/weakly-aligned comparison,
+  - [x] **ConvNeXt+U-Net regression**,
+  - [x] **A pretrained translation backbone**: Swin-T+U-Net using a pretrained
+    timm Swin-T encoder. This is a transformer-backbone proxy, not a true
+    SwinIR/Restormer restoration checkpoint.
+  - [x] **Our current ensemble + TTA** documented as the legacy raw-target
+    `19.28 dB` result, not included as a same-y-axis robust Week 6 row.
+- [x] Match training compute across all main robust baselines for fairness:
+  seed 42, Ann Arbor robust targets, amplified `sigma=0.3`, `256 x 320`, 50
+  epochs, 336 train / 41 val.
+- [x] Lock the seed-42 baseline table; this is the current "results" comparison
+  table, pending any Week 7 multi-seed reruns.
+- **Result:** Week 6 complete. Under the matched robust protocol, CycleGAN
+  reaches `8.60 dB`, pix2pix `11.83 dB`, small L1 U-Net `12.71 dB`,
+  ConvNeXt+U-Net `15.64 dB`, supervised-affine registration `15.92 dB`, and
+  Swin-T+U-Net `16.12 dB`. The method beats ConvNeXt+U-Net by `+0.284 dB` but
+  loses to the stronger pretrained Swin-T baseline by `-0.203 dB`. See
+  `WEEK6_BASELINES_RESULT.md` and `results/week6_baseline_summary.csv`.
+- **Blocker:** Week 6 removes any claim that the current supervised-affine
+  method is the top-performing model. Week 7 should either add the registration
+  head to the Swin-T backbone or frame registration as a diagnostic/ablation
+  rather than the headline method.
 
 ### Week 7 — Ablations
 **Goal:** every claim in the paper has an ablation.
