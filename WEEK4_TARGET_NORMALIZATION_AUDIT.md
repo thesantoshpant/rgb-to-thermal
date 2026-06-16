@@ -38,3 +38,13 @@ representation before Week 5 cross-dataset claims.
 - Keep Option B as fallback: report only direction/order on external datasets
   and avoid magnitude claims until normalization is defensible.
 
+## Week 4 Decision
+
+Use Option B for the Week 4 registration decision. The Kust4K and CART runs are
+valid as within-dataset comparisons because each registration row is compared to
+its own no-registration baseline under the same raw target convention. They are
+not valid as cross-dataset magnitude claims against Ann Arbor.
+
+Before Week 5 cross-dataset transfer claims, either implement an explicit target
+normalizer or keep reporting external results as within-dataset direction/order
+only.

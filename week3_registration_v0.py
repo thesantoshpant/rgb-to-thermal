@@ -21,12 +21,13 @@ import timm
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader, Dataset, Subset
 from torchvision.transforms import InterpolationMode
 import torchvision.transforms.functional as TF
 
 import r2t_common as C
 from train_a1 import ConvBlock, UNetReg
+from unified_dataset import UnifiedR2TDataset
 
 
 DEFAULT_TRANSLATION_FRAC = 0.20
@@ -123,6 +124,96 @@ class MisalignedAnnArbor(Dataset):
         row["rgb_input_raw"] = misaligned
         row["rgb_input"] = normalize_rgb(misaligned.unsqueeze(0))[0]
         return row
+
+
+class MisalignedUnifiedDataset(Dataset):
+    def __init__(
+        self,
+        base: Dataset,
+        sigma: float,
+        augment: bool,
+        seed: int,
+        max_translation_frac: float,
+        max_rotation_deg: float,
+        max_scale_frac: float,
+    ):
+        self.base = base
+        self.sigma = sigma
+        self.augment = augment
+        self.seed = seed
+        self.max_translation_frac = max_translation_frac
+        self.max_rotation_deg = max_rotation_deg
+        self.max_scale_frac = max_scale_frac
+
+    def __len__(self) -> int:
+        return len(self.base)
+
+    def __getitem__(self, idx: int) -> dict[str, torch.Tensor | str]:
+        rgb_raw, _thermal, scalar, dataset_tag, quality = self.base[idx]
+        misaligned = warp_rgb(
+            rgb_raw,
+            sigma=self.sigma,
+            seed=self.seed,
+            idx=idx,
+            stochastic=self.augment,
+            max_translation_frac=self.max_translation_frac,
+            max_rotation_deg=self.max_rotation_deg,
+            max_scale_frac=self.max_scale_frac,
+        )
+        return {
+            "rgb_raw": rgb_raw,
+            "rgb_input_raw": misaligned,
+            "rgb_input": normalize_rgb(misaligned.unsqueeze(0))[0],
+            "target": scalar,
+            "dataset_tag": dataset_tag,
+            "alignment_quality": quality,
+        }
+
+
+def make_external_base_dataset(args: argparse.Namespace, split: str, limit: int) -> Dataset:
+    if args.dataset == "kust4k":
+        ds = UnifiedR2TDataset.from_roots(kust4k_root=args.kust4k_root, split=split, size_hw=(C.RES_H, C.RES_W))
+    elif args.dataset == "caltech_cart":
+        ds = UnifiedR2TDataset.from_roots(caltech_root=args.caltech_root, split=split, size_hw=(C.RES_H, C.RES_W))
+    else:
+        raise ValueError(args.dataset)
+    if len(ds) == 0:
+        raise RuntimeError(f"No records found for dataset={args.dataset} split={split}")
+    if limit and limit > 0:
+        return Subset(ds, list(range(min(limit, len(ds)))))
+    return ds
+
+
+def make_registration_dataset(
+    args: argparse.Namespace,
+    split_name: str,
+    sigma: float,
+    augment: bool,
+    seed: int,
+    limit: int,
+) -> Dataset:
+    if args.dataset == "ann_arbor":
+        split = C.load_split()
+        names = split[split_name][: limit or None]
+        return MisalignedAnnArbor(
+            names,
+            sigma=sigma,
+            augment=augment,
+            seed=seed,
+            max_translation_frac=args.max_translation_frac,
+            max_rotation_deg=args.max_rotation_deg,
+            max_scale_frac=args.max_scale_frac,
+        )
+    base = make_external_base_dataset(args, split_name, limit)
+    return MisalignedUnifiedDataset(
+        base,
+        sigma=sigma,
+        augment=augment,
+        seed=seed,
+        max_translation_frac=args.max_translation_frac,
+        max_rotation_deg=args.max_rotation_deg,
+        max_scale_frac=args.max_scale_frac,
+    )
 
 
 def resize_registration_batch(batch: dict[str, torch.Tensor], res: int) -> dict[str, torch.Tensor]:
@@ -551,6 +642,11 @@ def write_json(path: Path, payload: dict) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--name", default="week3_reg_v0_ann_arbor")
+    parser.add_argument("--dataset", default="ann_arbor", choices=["ann_arbor", "kust4k", "caltech_cart"])
+    parser.add_argument("--ann-arbor-cache", default=None, help="Kept for metadata compatibility; R2T_CACHE controls Ann Arbor loading.")
+    parser.add_argument("--kust4k-root", default=None)
+    parser.add_argument("--caltech-root", default=None)
+    parser.add_argument("--eval-split", default="val", choices=["val", "test"])
     parser.add_argument(
         "--arch",
         default="target_conditioned",
@@ -583,26 +679,21 @@ def main() -> None:
 
     seed_all(args.seed)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    split = C.load_split()
-    train_names = split["train"][: args.max_train or None]
-    val_names = split["val"][: args.max_val or None]
-    train_ds = MisalignedAnnArbor(
-        train_names,
+    train_ds = make_registration_dataset(
+        args,
+        "train",
         sigma=args.train_sigma,
         augment=True,
         seed=args.seed,
-        max_translation_frac=args.max_translation_frac,
-        max_rotation_deg=args.max_rotation_deg,
-        max_scale_frac=args.max_scale_frac,
+        limit=args.max_train,
     )
-    val_ds = MisalignedAnnArbor(
-        val_names,
+    val_ds = make_registration_dataset(
+        args,
+        args.eval_split,
         sigma=args.eval_sigma,
         augment=False,
         seed=args.seed + 100000,
-        max_translation_frac=args.max_translation_frac,
-        max_rotation_deg=args.max_rotation_deg,
-        max_scale_frac=args.max_scale_frac,
+        limit=args.max_val,
     )
     train_loader = DataLoader(train_ds, batch_size=args.bs, shuffle=True, num_workers=4, drop_last=True, pin_memory=True)
     val_loader = DataLoader(val_ds, batch_size=args.bs, shuffle=False, num_workers=2, pin_memory=True)

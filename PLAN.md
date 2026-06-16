@@ -96,17 +96,17 @@ Submit primarily to **WACV 2027 R2 (Aug 28, 2026), Algorithms track**. In parall
 **Goal:** the model trains and improves over the fixed-crop baseline on at least one dataset.
 - [x] Run same-protocol no-registration Ann Arbor baseline for the headline delta.
 - [x] Start Kust4K/CART target-normalization audit.
-- [ ] Implement a target-normalization fix or choose the conservative reporting fallback.
-- [ ] Decide whether the primary registration mechanism should be input-space warp, feature-space warp, TPS, or small dense flow.
+- [x] Implement a target-normalization fix or choose the conservative reporting fallback.
+- [x] Decide whether the primary registration mechanism should be input-space warp, feature-space warp, TPS, or small dense flow.
 - [x] Test input-space affine as the interpretable paper-facing variant.
 - [x] Test a small input-space dense-flow candidate.
 - [x] Add known synthetic-warp supervision or an oracle inverse-warp diagnostic before more TPS/flow scaling.
-- [ ] Repeat supervised input-space affine with more seeds and decide whether to use it as pretraining/auxiliary loss.
-- [ ] Train on Kust4K. Compare against our fixed-crop baseline.
-- [ ] Train on CART. Same comparison.
-- [ ] **Decision point:** if learned registration beats fixed-crop by ≥ 0.3 dB on at least two datasets → continue. Else: revisit architecture or downgrade scope.
-- **Result:** Started. The no-registration Ann Arbor amplified σ=0.3 baseline reached PSNR 15.89. Shared feature-space affine reached 15.81, input-space RGB affine reached 15.77, default dense flow reached 15.55, and stronger-edge dense flow reached 15.38. Simple unsupervised affine/flow does not beat the baseline. Adding synthetic RGB warp supervision to input-space affine reaches PSNR 16.20, a +0.31 dB gain over no-registration on the same protocol. Target audit confirms Kust4K/CART raw grayscale targets have much lower edge energy than Ann Arbor scalar targets.
-- **Blocker:** The positive v1 signal currently depends on synthetic aligned-RGB supervision and one seed. Need seed repeat / pretraining-vs-joint decision, plus a defensible external target-normalization choice before Week 5.
+- [x] Repeat supervised input-space affine with more seeds and decide whether to use it as pretraining/auxiliary loss.
+- [x] Train on Kust4K. Compare against our fixed-crop baseline.
+- [x] Train on CART. Same comparison.
+- [x] **Decision point:** if learned registration beats fixed-crop by ≥ 0.3 dB on at least two datasets → continue. Else: revisit architecture or downgrade scope.
+- **Result:** Complete. Unsupervised shared-feature affine, input-space affine, and dense flow all underperformed no-registration on Ann Arbor. Adding synthetic RGB warp supervision to input-space affine gives a 3-seed Ann Arbor gain of +0.309 +/- 0.130 dB over no-registration. External same-dataset runs are mixed but positive: Kust4K +0.147 dB, CART +1.196 dB. Week 4 passes the continuation criterion on Ann Arbor + CART. Primary Week 5 mechanism: input-space affine with synthetic RGB warp supervision as pretraining/auxiliary loss. See `WEEK4_REGISTRATION_V1_PROGRESS.md` and `results/week4_registration_v1_summary.csv`.
+- **Blocker:** No Week 4 blocker. Week 5 must not make cross-dataset magnitude claims until Kust4K/CART target normalization is fixed or the conservative within-dataset reporting fallback is kept explicit.
 
 ### Week 5 — Cross-dataset generalization
 **Goal:** show the method transfers across datasets.
