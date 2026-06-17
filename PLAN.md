@@ -234,19 +234,24 @@ Submit primarily to **WACV 2027 R2 (Aug 28, 2026), Algorithms track** only if We
   absolute error, and uncertainty.
 - [x] Misalignment recovery candidate grid: misaligned RGB, aligned RGB,
   predicted warp, before/after residual, and target.
-- [ ] Hero figure: a single scene with RGB, GT thermal, our prediction, plus the uncertainty map. Pick something with a hot roof + cool tree + a building edge.
-- [ ] Cross-dataset gallery: three rows (Ann Arbor / Kust4K / CART) × four columns (RGB / GT / ours / best baseline).
-- [ ] Misalignment recovery figure: same scene with synthetic misalignment at σ ∈ {0, 0.2, 0.5}, our prediction vs baseline.
-- [ ] Failure cases: at least 2 honest failures (e.g., parallax-heavy buildings; specular reflections).
-- [ ] All figures committed in `figures/` at vector-quality (PDF) or 300+ dpi.
-- **Result:** Started Week 8 qualitative figure production. Generated
+- [x] Hero figure: a single scene with RGB, GT thermal, our prediction, plus the uncertainty map. Pick something with a hot roof + cool tree + a building edge.
+- [x] Cross-dataset gallery: three rows (Ann Arbor / Kust4K / CART) × four columns (RGB / GT / ours / best baseline).
+- [x] Misalignment recovery figure: same scene with synthetic misalignment at σ ∈ {0, 0.2, 0.5}, our prediction vs baseline.
+- [x] Failure cases: at least 2 honest failures (e.g., parallax-heavy buildings; specular reflections).
+- [x] All figures committed in `figures/` at vector-quality (PDF) or 300+ dpi.
+- **Result:** Week 8 qualitative figure set complete. Generated
   `figures/week8/ann_arbor_candidate_grid_seed42.png`,
   `figures/week8/misalignment_recovery_seed42.png`, and
   `figures/week8/ann_arbor_candidate_metrics_seed42.csv` from the locked
-  seed-42 uncertainty-decoupled affine checkpoint.
-- **Blocker:** These are candidate PNG grids, not final paper figures. The
-  final figure pass still needs cross-dataset rows, baseline columns, a
-  multi-sigma recovery view, and selected failure cases.
+  seed-42 uncertainty-decoupled affine checkpoint, plus final figure candidates:
+  `hero_ann_arbor_seed42.png`, `misalignment_recovery_multisigma_seed42.png`,
+  `cross_dataset_gallery_seed42.png`, `failure_cases_ann_arbor_seed42.png`, and
+  `week8_final_figure_metrics.csv`. See `WEEK8_QUALITATIVE_RESULT.md`.
+- **Blocker:** No execution blocker remains for Week 8. Paper-time caveat: the
+  cross-dataset gallery is qualitative only because Ann Arbor uses the locked
+  Week 7 protocol while Kust4K/CART use older within-dataset external
+  checkpoints. Multi-sigma recovery should stay representative unless repeated
+  across more scenes.
 
 ### Week 9 — Paper writing draft 1
 **Goal:** full draft submitted to ourselves and Prof. Siwo.

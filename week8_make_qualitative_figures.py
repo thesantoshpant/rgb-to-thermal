@@ -114,7 +114,7 @@ def draw_grid(
             x = left_w + c * (tile_w + pad)
             canvas.paste(row[key].resize((tile_w, tile_h), Image.BILINEAR), (x, y))
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    canvas.save(out_path)
+    canvas.save(out_path, dpi=(300, 300))
 
 
 def build_model(arch: str, encoder: str) -> torch.nn.Module:
