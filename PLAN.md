@@ -255,12 +255,16 @@ Submit primarily to **WACV 2027 R2 (Aug 28, 2026), Algorithms track** only if We
 
 ### Week 9 — Paper writing draft 1
 **Goal:** full draft submitted to ourselves and Prof. Siwo.
-- [ ] Outline → section sketches → first full draft.
+- [x] Outline → section sketches.
+- [ ] First full draft.
 - [ ] Sections: Abstract, Intro, Related Work (RGB-T translation, cross-modal registration, uncertainty in translation), Method, Experiments, Discussion, Limitations, Conclusion.
 - [ ] Internal review by Adithya + Santosh (each marks every paragraph: clear / unclear / wrong).
 - [ ] Send to Prof. Siwo by end of week, ask for top-level feedback on framing, not line edits.
-- **Result:**
-- **Blocker:**
+- **Result:** Week 9 started with `WEEK9_DRAFT_SCAFFOLD.md`: working title,
+  abstract skeleton, contribution list, section plan, figure/table map, and
+  claim guardrails.
+- **Blocker:** Full prose draft, method diagram, tables, and internal review are
+  still pending. Keep the Week 8 guardrails in every caption and claim.
 
 ### Week 10 — CCAI workshop submission
 **Goal:** lock the workshop paper. Don't let it eat the WACV polish.

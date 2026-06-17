@@ -185,13 +185,39 @@ def score_dataset(
     return rows
 
 
+@torch.no_grad()
+def score_paired_delta(
+    ours_model: torch.nn.Module,
+    base_model: torch.nn.Module,
+    ds,
+    device: torch.device,
+    res: int,
+    max_items: int,
+) -> list[dict]:
+    limit = min(len(ds), max_items or len(ds))
+    rows = []
+    for idx in range(limit):
+        ours = predict_one(ours_model, ds, idx, device, res)
+        base = predict_one(base_model, ds, idx, device, res)
+        rows.append(
+            {
+                "idx": idx,
+                "name": ours["name"],
+                "ours_psnr": ours["psnr"],
+                "base_psnr": base["psnr"],
+                "delta_psnr": ours["psnr"] - base["psnr"],
+            }
+        )
+    return rows
+
+
 def choose_median_psnr(scored: list[dict]) -> int:
     scored = sorted(scored, key=lambda r: r["psnr"])
     return int(scored[len(scored) // 2]["idx"])
 
 
-def choose_failure_indices(scored: list[dict], n: int) -> list[int]:
-    return [int(r["idx"]) for r in sorted(scored, key=lambda r: r["psnr"])[:n]]
+def choose_failure_indices(scored_delta: list[dict], n: int) -> list[int]:
+    return [int(r["idx"]) for r in sorted(scored_delta, key=lambda r: r["delta_psnr"])[:n]]
 
 
 def draw_labeled_grid(
@@ -202,13 +228,19 @@ def draw_labeled_grid(
     row_labels: list[str],
     tile_w: int,
     left_w: int = 210,
+    footnote: str | None = None,
 ) -> None:
     h, w = rows[0]["target"].shape
     tile_h = max(1, round(tile_w * h / w))
     pad = 10
     header_h = 52
     row_h = tile_h + 42
-    canvas = Image.new("RGB", (left_w + len(columns) * (tile_w + pad) + pad, header_h + len(rows) * row_h + pad), "white")
+    foot_h = 28 if footnote else 0
+    canvas = Image.new(
+        "RGB",
+        (left_w + len(columns) * (tile_w + pad) + pad, header_h + len(rows) * row_h + pad + foot_h),
+        "white",
+    )
     draw = ImageDraw.Draw(canvas)
     draw.text((pad, 8), title, fill=(0, 0, 0))
     for col, (label, _key) in enumerate(columns):
@@ -221,6 +253,8 @@ def draw_labeled_grid(
             draw.text((pad, y + 36), f"base {row['baseline_psnr']:.2f} dB", fill=(45, 45, 45))
         for col, (_label, key) in enumerate(columns):
             paste_fit(canvas, row[key], (left_w + col * (tile_w + pad), y, left_w + col * (tile_w + pad) + tile_w, y + tile_h))
+    if footnote:
+        draw.text((pad, header_h + len(rows) * row_h + 4), footnote, fill=(55, 55, 55))
     save_canvas(canvas, path)
 
 
@@ -327,21 +361,23 @@ def main() -> None:
         args.tile_width,
     )
 
-    scored_aa = score_dataset(aa_ours, aa_ds, device, args.res, args.max_score_items)
-    failure_indices = choose_failure_indices(scored_aa, 2)
+    scored_aa_delta = score_paired_delta(aa_ours, aa_base, aa_ds, device, args.res, args.max_score_items)
+    failure_indices = choose_failure_indices(scored_aa_delta, 2)
     failure_rows = []
     failure_labels = []
     for idx in failure_indices:
         ours = predict_one(aa_ours, aa_ds, idx, device, args.res)
         base = predict_one(aa_base, aa_ds, idx, device, args.res)
         row = {**ours, **row_images(ours), "baseline_img": Image.fromarray(colorize_scalar(base["pred"])), "baseline_psnr": base["psnr"]}
+        delta = ours["psnr"] - base["psnr"]
+        row["ours_delta_psnr"] = delta
         failure_rows.append(row)
-        failure_labels.append(f"{ours['name']} / low PSNR")
-        metrics.append(metric_record("failure", "ann_arbor", "ours", 0.3, ours, "selected among two lowest validation PSNR rows"))
+        failure_labels.append(f"{ours['name']} / delta {delta:+.2f} dB")
+        metrics.append(metric_record("failure", "ann_arbor", "ours", 0.3, ours, "selected by most negative paired PSNR delta"))
         metrics.append(metric_record("failure", "ann_arbor", "baseline", 0.3, base, "same sample"))
     draw_labeled_grid(
         out_dir / "failure_cases_ann_arbor_seed42.png",
-        "Failure cases: lowest Ann Arbor validation PSNR rows",
+        "Failure cases: Ann Arbor rows where ours underperforms baseline most",
         failure_rows,
         [
             ("RGB input", "rgb_img"),
@@ -421,6 +457,7 @@ def main() -> None:
         cross_labels,
         args.tile_width,
         left_w=275,
+        footnote="K4K row is completeness only: 3-seed within-dataset gain +0.096 +/- 0.067 dB, not significant.",
     )
 
     write_metrics(out_dir / "week8_final_figure_metrics.csv", metrics)
