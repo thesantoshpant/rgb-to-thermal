@@ -278,6 +278,12 @@ reconstruction weighting path. In the locked primary rows, the uncertainty
 regularizer weights are also zero, so the branch is computed for diagnostics but
 does not shape the objective. This finding should be presented as an
 ablation-driven design choice rather than a theoretical claim about uncertainty.
+We also bounded the loss-formulation confound directly: changing the ConvNeXt
+no-registration baseline to the Swin-style combined loss improves the seed-42
+PSNR by `+0.201 dB` in the explicit zero-uncertainty-terms control. The older
+combined control is `0.037 dB` higher, a small run/control difference that does
+not change the conclusion. This loss-recipe effect is smaller than the primary
+three-seed affine gain (`+0.571 +/- 0.157 dB`).
 
 The external results constrain the paper's scope. Kust4K does not support a
 positive within-dataset registration claim across seeds. CART has stronger

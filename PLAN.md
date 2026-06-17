@@ -11,7 +11,7 @@
 | Go/no-go experiment result | end of **Week 2** | Decides if WACV story has a backbone |
 | WACV 2027 R2 paper **registration** | **Aug 21, 2026** | Required to submit R2 |
 | WACV 2027 R2 paper **submission** | **Aug 28, 2026** | Primary target |
-| CCAI @ NeurIPS submission (est.) | mid-September 2026 | Non-archival safety net |
+| CCAI @ NeurIPS submission (planning) | **Aug 29, 2026 AoE** suggested NeurIPS workshop contribution date; official CCAI 2026 CFP not posted yet | Non-archival safety net |
 | WACV 2027 decisions | **Oct 9, 2026** | |
 | WACV 2027 camera-ready | **Nov 2, 2026** | |
 | WACV 2027 conference | **Jan 5–9, 2027** (Disney Springs) | |
@@ -274,10 +274,18 @@ Submit primarily to **WACV 2027 R2 (Aug 28, 2026), Algorithms track** only if We
 **Goal:** lock the workshop paper. Don't let it eat the WACV polish.
 - [ ] Shorten the WACV draft to **4 pages** + appendix, reframed for the **climate/urban-heat** angle.
 - [ ] Use the *empirical* finding (palette + alignment + cross-dataset evaluation) as the contribution at workshop; keep the *methodological* learned-registration angle for WACV.
-- [ ] Submit to CCAI by its deadline (verify CCAI 2026 deadline in early September).
+- [x] Verify CCAI 2026 deadline status before starting the workshop pass.
+- [ ] Submit to CCAI by its deadline once the official 2026 CFP is posted.
 - [ ] Cap at 1 week of work; do not let polishing eat into WACV.
-- **Result:**
-- **Blocker:**
+- **Result:** CCAI 2026 deadline is not posted on the official Climate Change
+  AI events page as of 2026-06-17. NeurIPS 2026 lists Dec 11-12 workshops and
+  Aug 29, 2026 AoE as the suggested workshop contribution submission date, so
+  Week 10 is proceeding under that conservative planning date. Created
+  `WEEK10_CCAI_WORKSHOP_PLAN.md`, `paper_draft/ccai_short_draft.md`, and
+  `paper_draft/ccai_cut_list.md` as the workshop-shortening scaffold.
+- **Blocker:** Official CCAI 2026 CFP, page limit, appendix policy, and final
+  submission deadline are still not announced. Treat the current CCAI draft as
+  a planning scaffold until the CFP appears.
 
 ### Week 11 — Paper draft 2 + figures polish
 **Goal:** the paper is "almost done."
@@ -302,7 +310,7 @@ Submit primarily to **WACV 2027 R2 (Aug 28, 2026), Algorithms track** only if We
 ---
 
 ## After submission
-- **Sept 1–21:** finalize and submit CCAI workshop version.
+- **Late Aug / Sept, pending official CFP:** finalize and submit CCAI workshop version. NeurIPS 2026 currently suggests Aug 29, 2026 AoE for workshop contributions, but the CCAI 2026 deadline is not posted yet.
 - **Oct 9:** WACV decision. If accept → camera-ready by Nov 2.
 - **If reject:** address reviewer comments, target WACV 2028 R1 (Jun 2027 deadline) or another venue with stronger story.
 

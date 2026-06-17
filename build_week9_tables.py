@@ -205,7 +205,7 @@ def main() -> None:
         external_table(),
         captions(),
     ]
-    payload = "\n\n".join(sections) + "\n"
+    payload = "\n\n".join(section.rstrip("\n") for section in sections) + "\n"
     if "--stdout" in sys.argv:
         print(payload, end="")
         return
