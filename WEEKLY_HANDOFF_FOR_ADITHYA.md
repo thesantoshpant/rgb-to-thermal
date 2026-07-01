@@ -50,7 +50,7 @@ Paper draft is locked, 42-entry bibliography in place, figures have honest cavea
 
 ### 1.1 Origin
 
-- **Hackathon (March 2026):** UMich Heat Resilience Hackathon, hosted by Prof. Geoffrey H. Siwo. We submitted a ResNet18+FiLM refiner on top of a frozen ThermalGen generator. Team placed 2nd. Final hackathon metrics on the official 202 unseen test images: **PSNR 19.28 dB, SSIM 0.661, LPIPS 0.297**.
+- **Hackathon (March 2026):** UMich Heat Resilience Hackathon, hosted by Prof. Geoffrey H. Siwo. We submitted a ResNet18+FiLM refiner on top of a frozen ThermalGen generator. Team placed 2nd. Best v2 ensemble metrics on the internal held-out set (from `results/leaderboard_v2.csv` row `[ens_weighted]`): **PSNR 19.28 dB, SSIM 0.712, CLPIPS 0.364**. Official 202-hidden-test ensemble (`results/leaderboard_official.csv`): PSNR 19.11, SSIM 0.705, CLPIPS 0.350.
 - **Prof. Siwo's follow-up:** two asks. (1) Weather-perturbation probe for a Detroit deployment (separate `weather_experiments/` track — outside this paper). (2) Push the work to peer review.
 - **Publication path:**
   - **Primary:** WACV 2027 main conference. R2 register Aug 21, **submit Aug 28 2026 AoE**, decisions Oct 9, camera-ready Nov 2, conference Jan 5-9 2027.
@@ -87,7 +87,7 @@ PCA of the thermal pixels shows the colors lie on one curve (PC1 ≈ 0.76 of var
 | RGB camera | 4000 × 3000 (12 MP) | 4:3 |
 | Thermal camera | 640 × 512 | 5:4 |
 
-The thermal sensor has a narrower field of view than the RGB sensor. Edge-correlation between RGB-grayscale and thermal at native framing is ≈ 0. A fixed central **~0.65-width crop** of the RGB brings the two into rough registration (edge-correlation → ~0.2). Per-image fine refinement via OpenCV `findTransformECC` was prototyped but the global crop is the production default.
+The thermal sensor has a narrower field of view than the RGB sensor. Edge-correlation between RGB-grayscale and thermal at native framing is ≈ 0. Preprocessing (in `data_prep.py`) uses a two-stage registration: (1) `estimate_global_c` finds the best global crop-width fraction `c` (measured mean edge-NCC ~0.65) by maximizing mean thermal-edge NCC across the dataset; (2) `refine_offset` then does a **per-image** small-translation search over (fx, fy) ∈ {−0.08, −0.04, 0, 0.04, 0.08}² around that center crop, choosing the offset that maximizes edge-NCC against the recovered thermal scalar for that image. Each image's registered RGB is saved to `data_cache/reg_rgb/<name>.png`. This target-informed preprocessing is a documented protocol choice; the paper should describe it as such in §7.
 
 ### 2.3 Why these matter
 
@@ -163,11 +163,11 @@ Pixel-loss metrics (PSNR, MAE) were effectively measuring the wrong thing. The d
 
 Plus the direct synthetic-warp-recovery loss: `L1(warped_RGB, aligned_RGB)`.
 
-**Numbers (seed 42, single-seed at this point, from `results/week4_registration_v1_summary.csv`):**
+**Numbers (seed 42, single-seed at this point, from `results/week4_registration_v1_summary.csv`; Week 4 protocol was raw target normalization, 30 epochs — different from the Week 7 locked robust/50-epoch protocol, so the absolute PSNRs are NOT directly comparable to later tables):**
 
 | Dataset | no-reg PSNR | affine PSNR | Δ | lambda_warp |
 |---|---:|---:|---:|---:|
-| Ann Arbor | 17.14 | 17.45 | +0.309 | 1.0 |
+| Ann Arbor | 15.89 | 16.20 | +0.313 | 1.0 |
 | Kust4K | 19.03 | 19.18 | +0.147 | 1.0 |
 | CART | 20.07 | 21.26 | **+1.196** | 1.0 |
 
@@ -233,7 +233,7 @@ External-to-external transfer fails. Some cells have negative Pearson correlatio
 | 123 | 9.712 | 10.223 | +0.511 |
 | **Mean ± std** | – | – | **+0.474 ± 0.061 dB** |
 
-t = 13.5, df=2, **p < 0.001**. Only transfer cell that survives 3-seed audit.
+t = 13.5, df=2, **p ≈ 0.003** (one-tailed). Only transfer cell that survives 3-seed audit.
 
 **Pretrain K4K+CART → AA fine-tune (seed 42, from `results/week5_pretrain_finetune_summary.csv`):** 15.85 dB vs 15.68 dB from-scratch = **+0.165 dB at 1.67× compute**. Tiny, possibly compute artifact.
 
@@ -358,8 +358,8 @@ Pure loss-recipe effect: +0.201 dB. The +0.571 dB method gain is comfortably lar
 | Cross-dataset AA | sample 70 | 16.52 | 15.78 | +0.74 |
 | Cross-dataset K4K | idx 90 | 19.13 | 18.67 | +0.46 (legacy checkpoint, see caveat) |
 | Cross-dataset CART | idx 12 | 21.12 | 20.62 | +0.50 (legacy checkpoint, see caveat) |
-| Failure AA 97 | – | 13.26 | 12.78 | +0.48 (originally selected by low PSNR) |
-| Failure AA 124 | – | 13.97 | 13.72 | +0.25 (originally selected by low PSNR) |
+| Failure AA 329 | – | 15.32 | 15.95 | **−0.64 (ours loses)** — selected by most negative paired delta |
+| Failure AA 386 | – | 17.24 | 17.67 | **−0.43 (ours loses)** — selected by most negative paired delta |
 
 **Audit issues caught and fixed (commit `680311b`):**
 
@@ -1145,7 +1145,7 @@ Anticipated reviewer questions and how to answer.
 
 ### Q2. Why use ConvNeXt-tiny instead of a transformer backbone?
 
-**A:** Three reasons. (1) Swin-T no-registration baseline doesn't significantly outperform our method (+0.096 ± 0.096 dB, not significant). (2) Swin-T affine stacking is null (−0.064 ± 0.214 dB), so the method is backbone-dependent and we don't claim universality. (3) ConvNeXt-tiny + UNet is a strong, simple, widely-deployable baseline; demonstrating gains on it is a useful contribution for downstream practitioners.
+**A:** Three reasons. (1) Under the locked uncertainty-decoupled protocol, our ConvNeXt method actually **beats** Swin-T no-reg by +0.215 ± 0.113 dB (paired 3-seed, p ≈ 0.04, marginally significant); the +0.096 ± 0.096 dB Swin-T advantage from the Week 6 audit was against the OLDER uncertainty-weighted variant, which we no longer treat as the primary method. (2) Swin-T affine stacking is null (−0.064 ± 0.214 dB), so the method is backbone-dependent and we don't claim universality. (3) ConvNeXt-tiny + UNet is a strong, simple, widely-deployable baseline; demonstrating gains on it is a useful contribution for downstream practitioners.
 
 ### Q3. Why is uncertainty weighting bad?
 
